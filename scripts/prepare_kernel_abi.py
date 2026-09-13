@@ -3,6 +3,9 @@
 import argparse, json, os, shutil, subprocess
 from pathlib import Path
 ap=argparse.ArgumentParser(); ap.add_argument('config',type=Path); ap.add_argument('root',type=Path); a=ap.parse_args()
+# kbuild resolves a relative O= against the directory make -C switched into, which
+# nests the output under the kernel dir a second time. Anchor every path first.
+a.root=a.root.resolve()
 c=json.loads(a.config.read_text()); k=a.root/c['kernel_dir']; k=k if (k/'Makefile').is_file() else a.root
 jobs=os.environ.get('JOBS',str(os.cpu_count() or 2)); arch=c.get('arch','arm64'); out=Path(os.environ.get('KERNEL_BUILD_DIR',str(k/'out'))); out.mkdir(parents=True,exist_ok=True)
 compiler=os.environ.get('CLANG_BIN') or c.get('compiler') or c.get('c_compiler')
