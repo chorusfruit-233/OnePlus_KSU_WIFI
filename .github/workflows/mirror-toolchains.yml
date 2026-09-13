@@ -26,12 +26,29 @@ jobs:
     steps:
       - name: Ensure cache release
         run: |
-          gh release view toolchain-cache --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create toolchain-cache --repo "$GITHUB_REPOSITORY" --title 'Toolchain cache' --notes 'Mirrored manifest toolchains'
+          gh release view toolchain-cache --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create toolchain-cache --repo "$GITHUB_REPOSITORY" --title 'Toolchain cache' --notes 'Mirrored manifest toolchains' || true
       - name: Mirror archive
+        env:
+          SUBDIR: ${{ matrix.subdir }}
         run: |
           set -euo pipefail
           f='${{ matrix.filename }}'; repo="$GITHUB_REPOSITORY"; base="https://github.com/$repo/releases/download/toolchain-cache/$f"
           if curl -fsIL "$base" >/dev/null 2>&1; then echo "cache hit: $f"; exit 0; fi
           curl --fail --location --retry 5 --retry-all-errors -o "$f" '${{ matrix.url }}'
+          test -s "$f"
+          if [ -n "$SUBDIR" ]; then
+            # Clang prebuilt repos carry every clang release at once, which blows past
+            # the 2 GiB release asset limit. Keep only the subdirectory the device uses.
+            # tar exits on SIGPIPE once head has its line, hence the || true.
+            top="$(tar -tzf "$f" | head -1 | cut -d/ -f1 || true)"
+            [ -n "$top" ] || { echo "cannot determine archive root of $f" >&2; exit 1; }
+            rm -rf prune; mkdir -p prune
+            tar -xzf "$f" -C prune --wildcards "$top/$SUBDIR/*"
+            test -d "prune/$top/$SUBDIR" || { echo "$SUBDIR missing in $f" >&2; exit 1; }
+            rm -f "$f"
+            tar -czf "$f" -C "prune/$top" "$SUBDIR"
+            rm -rf prune
+            echo "pruned $f to $SUBDIR ($(du -h "$f" | cut -f1))"
+          fi
           test -s "$f"
           gh release upload toolchain-cache "$f" --repo "$repo" --clobber

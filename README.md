@@ -13,10 +13,12 @@
 - `profiles/wifi-drivers.json`：无线驱动 Kconfig、产物和固件族。
 - `scripts/build_lkm.sh`：基于现有内核树构建并打包单设备模块。
 - `module-template/service.sh`：启动时校验 `uname -r` 后调用 `ksud insmod`。
-- `.github/workflows/mirror-toolchains.yml`：从全部 manifest 收集唯一工具链 revision，写入 `toolchain-cache` Release。
+- `.github/workflows/mirror-toolchains.yml`：从全部 manifest 收集工具链 revision，写入 `toolchain-cache` Release。
 - `scripts/mirror_toolchains.py`：生成工具链镜像矩阵。
 
 CI 的 `build.yml` 使用 `actions/cache` 保存每设备 ccache（默认 8 GiB），缓存键包含设备配置和无线 profile；工具链同步优先读取 `TOOLCHAIN_CACHE_URL`，因此可由 `mirror-toolchains.yml` 预热。`ccache` 缓存会在 job 结束时由 Actions 自动保存。
+
+clang 预编译仓库同时存放历次发布的多个 clang 版本，整包普遍超过 GitHub Release 单个 asset 的 2 GiB 上限，因此镜像按 `(revision, clang-rXXXXXX)` 切成独立条目：workflow 只保留设备 `compiler` 指向的那个子目录，`sync_manifest.py --config` 按同一子目录名取用。下载顺序为 `clang-<rev>-<子目录>.tar.gz` → `clang-<rev>.tar.gz`（整包，兼容旧缓存）→ CodeLinaro `git clone`。build-tools 和 rust 体积较小，仍按整包镜像。
 
 ## 使用
 

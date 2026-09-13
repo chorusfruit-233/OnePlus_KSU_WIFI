@@ -87,7 +87,7 @@ jobs:
       - name: Sync kernel and toolchain from manifest
         env:
           TOOLCHAIN_CACHE_URL: https://github.com/${{ github.repository }}/releases/download/toolchain-cache
-        run: python3 scripts/sync_manifest.py "manifests/${{ steps.meta.outputs.os }}/${{ steps.meta.outputs.manifest }}" kernel-source
+        run: python3 scripts/sync_manifest.py "manifests/${{ steps.meta.outputs.os }}/${{ steps.meta.outputs.manifest }}" kernel-source --config "${{ matrix.config }}"
       - name: Prepare target ABI
         if: inputs.prepare_abi
         working-directory: kernel-source
