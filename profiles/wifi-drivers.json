@@ -18,7 +18,9 @@
       "CONFIG_P54_USB",
       "CONFIG_RT2500USB",
       "CONFIG_RT73USB",
-      "CONFIG_ATH6KL_USB"
+      "CONFIG_ATH6KL_USB",
+      "CONFIG_ATH6KL",
+      "CONFIG_P54_COMMON"
     ],
     "targets": [
       "drivers/net/wireless/realtek/rtl8xxxu/rtl8xxxu.ko",
@@ -63,7 +65,8 @@
     ],
     "dependencies": [
       "CONFIG_CFG80211",
-      "CONFIG_MAC80211"
+      "CONFIG_MAC80211",
+      "CONFIG_LEDS_CLASS"
     ],
     "resident_modules": [
       "cfg80211",

@@ -31,6 +31,25 @@ def env_path(name, default):
     return Path(os.environ.get(name) or default).expanduser().resolve()
 
 
+def materialize_ancestors(external, source, scopes):
+    """Recreate the ancestor directories of every scope inside the external tree.
+
+    A driver may reach a header shared with a sibling through `-I $(srctree)/$(src)/..`
+    (rtl8187 pulls rtl818x.h that way), and the external tree only carries the leaf
+    directories. Only regular files are copied, and the external root is left alone so
+    the generated Kbuild stays authoritative.
+    """
+    for scope in scopes:
+        ancestor = Path(scope).parent
+        while ancestor.parts:
+            destination = external / ancestor
+            destination.mkdir(parents=True, exist_ok=True)
+            for entry in (source / ancestor).iterdir():
+                if entry.is_file() and not (destination / entry.name).exists():
+                    shutil.copy2(entry, destination / entry.name)
+            ancestor = ancestor.parent
+
+
 def build(config_path, checkout, output):
     run(sys.executable, ROOT / 'scripts/check_config.py', config_path)
     config = json.loads(config_path.read_text())
@@ -157,6 +176,11 @@ def build(config_path, checkout, output):
     missing = sorted(s for s in requested - optional if current.get(s) != 'm')
     if missing:
         raise ValueError('Kconfig did not enable the requested modules (missing symbols/dependencies): ' + ', '.join(missing))
+    # An optional candidate Kconfig dropped is the usual reason a driver never reaches the
+    # package, so name each one instead of leaving the payload silently short.
+    for symbol in sorted(requested):
+        if current.get(symbol) != 'm':
+            print(f'note: {symbol} resolved to {current.get(symbol, "n")}; candidate skipped', flush=True)
     # Existing ABI settings cannot change, even as an olddefconfig side effect.
     changed = [f'{key}: {value} -> {current.get(key, "n")}' for key, value in baseline.items()
                if value != 'n' and current.get(key, 'n') != value]
@@ -198,6 +222,7 @@ def build(config_path, checkout, output):
             raise ValueError(f'missing driver source directory: {source_path}')
         shutil.copytree(source_path, external / scope, symlinks=False,
                         ignore=shutil.ignore_patterns('*.o', '*.ko', '*.a', '*.cmd', '*.mod', '*.mod.c', 'Module.symvers', 'modules.order'))
+    materialize_ancestors(external, source, scopes)
     (external / 'Kbuild').write_text('obj-m += ' + ' '.join(scope + '/' for scope in scopes) + '\n')
     # Existing modular providers inside these scopes are rebuilt as a set. Remove
     # their duplicate exports from modpost input, then verify their CRCs below.
