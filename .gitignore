@@ -1,0 +1,65 @@
+# --- OS / editor junk ---
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# --- local tooling config ---
+GEMINI.md
+opencode.json
+.github/opencode/conflict_files.txt
+.github/opencode/conflict_summary.txt
+
+# --- kernel build output ---
+out/
+*.o
+*.o.*
+*.ko
+*.ko.*
+*.mod
+*.mod.c
+*.cmd
+*.order
+*.symvers
+.tmp_*
+.tmp_vmlinux*
+vmlinux
+vmlinux.o
+System.map
+Module.symvers
+modules.order
+modules.builtin
+modules.builtin.modinfo
+Image
+Image.gz
+Image.lz4
+Image.gz-dtb
+*.dtb
+*.dtbo
+dtbo.img
+.config
+.config.old
+include/config/
+include/generated/
+
+# --- packaging output ---
+anykernel/
+AnyKernel3/
+
+# --- toolchains / synced source trees ---
+# Uncomment the ones you sync at build time instead of committing.
+# toolchains/
+# prebuilts/
+# clang/
+# kernel_platform/
+# kernel/
+# common/
+# msm-kernel/
+# vendor/
+
+# --- logs ---
+*.log
