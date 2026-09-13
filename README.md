@@ -1,45 +1,28 @@
-# OnePlus KSU WiFi
+# OnePlus_KSU_WIFI
 
-KernelSU-enabled kernel builds for OnePlus devices, with **working WiFi** as the
-primary goal.
+按 [OnePlus_ReSukiSU_SUSFS](../OnePlus_ReSukiSU_SUSFS) 的设备矩阵组织，为 OnePlus 设备内核树中未启用的无线网卡驱动构建 KernelSU 模块。每个设备产出一个 ZIP，模块内包含该设备编译出的 `.ko`、目标 `kernel.release`、`Module.symvers` 和配置快照；`service.sh` 在启动时通过 `/data/adb/ksud insmod` 加载驱动。
 
-[![KernelSU](https://img.shields.io/badge/KernelSU-Supported-green)](https://kernelsu.org/)
+## ABI 前提
 
-> **Status: scaffold.** This repository was just initialised. Build scripts,
-> device manifests and per-device configuration are not committed yet — the
-> README will be filled in as the project takes shape.
+必须使用与手机当前运行内核完全对应的源码提交、`.config`、`Module.symvers`、工具链和 `kernelrelease`。脚本只把选定的无线驱动从 `n` 改为 `m`，不会修改 `LOCALVERSION`、LTO、SUSFS 或其他 ABI 设置。`modules_prepare` 不能替代完整的 `Module.symvers`。模块签名、CONFIG_MODVERSIONS、内核版本或导出符号不匹配时应停止安装。
 
-## Overview
+## 目录
 
-Recent OnePlus devices boot GKI/OGKI kernels in which the wireless stack is
-delivered as loadable kernel modules rather than being linked into the kernel
-image. Keeping KernelSU and WiFi working at the same time therefore comes down
-to building, matching and loading the correct module payload for each KMI.
+- `configs/oosXX/*.json`：设备、内核目录、defconfig、编译器和无线 profile。
+- `manifests/oosXX/*.xml`：沿用参考项目的 OnePlus 源码 manifest。
+- `profiles/wifi-drivers.json`：无线驱动 Kconfig、产物和固件族。
+- `scripts/build_lkm.sh`：基于现有内核树构建并打包单设备模块。
+- `module-template/service.sh`：启动时校验 `uname -r` 后调用 `ksud insmod`。
 
-This repository collects the OnePlus build configuration for that setup.
+## 使用
 
-## Related projects
+```sh
+python3 scripts/check_config.py
+make CONFIG=configs/oos16/OP13.json KERNEL_TREE=/path/to/checked-out/kernel
+# 仅检查全部设备矩阵
+make check
+```
 
-| Project | Purpose |
-|---------|---------|
-| [GKI-WiFi-KSU](https://github.com/chorusfruit-233/GKI-WiFi-KSU) | Prebuilt WiFi LKM payloads shipped as a KernelSU module |
-| [OnePlus_SDM845_ReSukiSU_SUSFS](https://github.com/chorusfruit-233/OnePlus_SDM845_ReSukiSU_SUSFS) | Automated SDM845 ReSukiSU + SUSFS kernel / AnyKernel3 builder |
-| [Wild Kernels · OnePlus_KernelSU_SUSFS](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS) | Upstream OnePlus KernelSU + SUSFS kernel builds |
+构建前在目标树中准备好 `.config`、完整 `Module.symvers` 和已生成的精确 `kernel.release`。可用 `KERNEL_BUILD_DIR`、`KERNEL_CONFIG`、`KERNEL_SYMVERS` 指向单独的目标构建目录；需要打包现有依赖模块时设置 `KERNEL_MODULES_DIR`。固件不会从内核仓库自动复制；根据 profile 的 `firmware` 列表把匹配版本放入模块的 `firmware/` 目录，并确保系统允许模块访问该路径。`firmware_policy=warn` 只提示缺失固件，驱动能否工作仍需在设备上验证。
 
-## Supported devices
-
-To be documented.
-
-## Building
-
-To be documented.
-
-## Disclaimer
-
-Flashing a custom kernel is done at your own risk. Back up your data and make
-sure you understand what you are flashing before you start. The author is not
-responsible for bricked devices, damaged hardware, or any other consequences.
-
-## License
-
-To be decided.
+项目已同步参考项目的全部 158 个设备配置和 158 个 manifest（OOS14/OOS15/OOS16）。每个配置都包含 `kernel_dir`、`defconfig`、`wifi_drivers`、`expected_release_prefix` 等 LKM 构建字段。Qualcomm 设备默认选择 ath11k/ath12k，联发科设备默认选择 mt76-usb；构建前必须根据目标源码的 Kconfig 和实际无线芯片复核 profile，缺少驱动源码时构建会明确失败。可按同样格式添加设备和 USB 无线 profile（`rtl8xxxu` 等）。

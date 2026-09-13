@@ -63,3 +63,5 @@ AnyKernel3/
 
 # --- logs ---
 *.log
+__pycache__/
+*.pyc

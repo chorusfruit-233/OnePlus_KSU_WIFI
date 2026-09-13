@@ -1,0 +1,6 @@
+id=oneplus_wifi_lkm
+name=OnePlus WiFi LKM
+version=0.1
+versionCode=1
+author=OnePlus_KSU_WIFI
+description=Per-device wireless driver modules loaded by KernelSU

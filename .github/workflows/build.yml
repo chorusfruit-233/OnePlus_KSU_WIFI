@@ -1,0 +1,78 @@
+name: Build per-device WiFi KernelSU modules
+on:
+  workflow_dispatch:
+    inputs:
+      config_path:
+        description: Device config path, or ALL for the complete matrix
+        required: true
+        default: configs/oos16/OP13.json
+      prepare_abi:
+        description: Generate ABI from the manifest tree's defconfig (otherwise use supplied ABI artifacts)
+        type: boolean
+        required: true
+        default: true
+  pull_request:
+    paths: [configs/**, manifests/**, profiles/**, scripts/**, module-template/**]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/check_config.py
+      - run: python3 -m unittest discover -s tests -v
+  matrix:
+    needs: validate
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.devices.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: devices
+        env:
+          REQUESTED: ${{ inputs.config_path }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import glob,json,os
+          r=os.environ.get('REQUESTED','')
+          p=sorted(glob.glob('configs/oos*/*.json')) if r in ('','ALL') else [r]
+          if any(not os.path.isfile(x) for x in p): raise SystemExit('missing config')
+          print('matrix='+json.dumps({'config':p}))
+          PY
+  build:
+    needs: matrix
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.matrix.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y bc bison build-essential cpio flex libelf-dev libssl-dev libdw-dev python3 rsync zip jq kmod
+      - name: Resolve device metadata
+        id: meta
+        env:
+          CONFIG: ${{ matrix.config }}
+        run: |
+          echo "os=$(jq -r .os_version "$CONFIG" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+          echo "manifest=$(jq -r .manifest "$CONFIG")" >> "$GITHUB_OUTPUT"
+          echo "kernel_dir=$(jq -r .kernel_dir "$CONFIG")" >> "$GITHUB_OUTPUT"
+      - name: Sync kernel and toolchain from manifest
+        run: python3 scripts/sync_manifest.py "manifests/${{ steps.meta.outputs.os }}/${{ steps.meta.outputs.manifest }}" kernel-source
+      - name: Prepare target ABI
+        if: inputs.prepare_abi
+        working-directory: kernel-source
+        run: python3 "$GITHUB_WORKSPACE/scripts/prepare_kernel_abi.py" "$GITHUB_WORKSPACE/${{ matrix.config }}" .
+      - name: Build and package LKM
+        env:
+          KERNEL_TREE: ${{ github.workspace }}/kernel-source
+          KERNEL_BUILD_DIR: ${{ github.workspace }}/kernel-source/${{ steps.meta.outputs.kernel_dir }}/out
+          JOBS: 2
+        run: scripts/build_lkm.sh "${{ matrix.config }}" "$KERNEL_TREE" dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wifi-lkm-${{ matrix.config }}
+          path: dist/**/*.zip
