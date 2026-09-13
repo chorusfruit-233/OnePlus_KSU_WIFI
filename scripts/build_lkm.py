@@ -67,6 +67,11 @@ def build(config_path, checkout, output):
         if not compiler.is_absolute():
             compiler = checkout / compiler
         if not (compiler / 'clang').is_file():
+            toolchain = compiler.parent.name
+            matches = list(checkout.glob(f'**/{toolchain}/bin/clang')) if toolchain else []
+            if matches:
+                compiler = matches[0].parent
+        if not (compiler / 'clang').is_file():
             raise ValueError(f'matching clang toolchain missing: {compiler}; set CLANG_BIN')
         os.environ['PATH'] = str(compiler.resolve()) + os.pathsep + os.environ['PATH']
     if not shutil.which('clang'):
