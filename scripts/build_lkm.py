@@ -127,12 +127,15 @@ def build(config_path, checkout, output):
         if os.environ.get(name):
             make.append(f'{name}={os.environ[name]}')
     requested = set()
+    optional = set()
     prerequisite_modules = set()
     bools = set()
     targets = []
     for profile_name in config['wifi_drivers']:
         profile = profiles[profile_name]
         requested.update(profile['kconfig'])
+        if profile.get('optional'):
+            optional.update(profile['kconfig'])
         prerequisite_modules.update(profile.get('dependencies', []))
         bools.update(profile.get('bool_kconfig', []))
         targets.extend(profile['targets'])
@@ -141,7 +144,7 @@ def build(config_path, checkout, output):
         raise ValueError(f'missing Kconfig helper: {config_script}')
     for symbol in sorted(requested | prerequisite_modules):
         if baseline.get(symbol) == 'y':
-            if symbol in requested:
+            if symbol in requested and symbol not in optional:
                 raise ValueError(f'{symbol} is already built into the target kernel; choose a disabled driver')
             continue
         run(config_script, '--file', obj / '.config', '--module', symbol)
@@ -151,7 +154,7 @@ def build(config_path, checkout, output):
         run(config_script, '--file', obj / '.config', '--enable', symbol)
     run(*make, 'olddefconfig')
     current = config_values(obj / '.config')
-    missing = sorted(s for s in requested if current.get(s) != 'm')
+    missing = sorted(s for s in requested - optional if current.get(s) != 'm')
     if missing:
         raise ValueError('Kconfig did not enable the requested modules (missing symbols/dependencies): ' + ', '.join(missing))
     # Existing ABI settings cannot change, even as an olddefconfig side effect.
@@ -168,7 +171,7 @@ def build(config_path, checkout, output):
     # Build these in-tree directories as ONE external module set. This makes
     # modpost consume target Module.symvers, including on kernels >= 6.6.
     # Full `make modules` instead tries to regenerate the running kernel ABI.
-    scopes = {str(Path(t).parent) for t in targets}
+    scopes = {str(Path(t).parent) for t in targets if (source / Path(t).parent).is_dir()}
     added_modules = {k for k, v in current.items() if v == 'm' and baseline.get(k) != 'm'}
     makefiles = list(source.rglob('Makefile')) + list(source.rglob('Kbuild'))
     for makefile in makefiles:

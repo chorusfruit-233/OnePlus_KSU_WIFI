@@ -73,9 +73,12 @@ def package(config_path, kernel, install, output):
             builtins.update(module_name(p) for p in builtin_file.read_text().splitlines())
     requested = []
     for profile_name in config['wifi_drivers']:
-        for target in profiles[profile_name]['targets']:
+        profile = profiles[profile_name]
+        for target in profile['targets']:
             matches = [p for p in module_paths if p.as_posix().endswith('/' + target)]
             if len(matches) != 1:
+                if profile.get('optional') and not matches:
+                    continue
                 fail(f'requested module must be produced exactly once: {target} (found {len(matches)})')
             if matches[0] not in requested:
                 requested.append(matches[0])

@@ -31,4 +31,4 @@ make check
 
 构建前在目标树中准备好 `.config`、完整 `Module.symvers` 和已生成的精确 `kernel.release`。可用 `KERNEL_BUILD_DIR`、`KERNEL_CONFIG`、`KERNEL_SYMVERS` 指向单独的目标构建目录；需要打包现有依赖模块时设置 `KERNEL_MODULES_DIR`。固件不会从内核仓库自动复制；根据 profile 的 `firmware` 列表把匹配版本放入模块的 `firmware/` 目录，并确保系统允许模块访问该路径。`firmware_policy=warn` 只提示缺失固件，驱动能否工作仍需在设备上验证。
 
-项目已同步参考项目的全部 158 个设备配置和 158 个 manifest（OOS14/OOS15/OOS16）。每个配置都包含 `kernel_dir`、`defconfig`、`wifi_drivers`、`expected_release_prefix` 等 LKM 构建字段。Qualcomm 设备默认选择 ath11k/ath12k，联发科设备默认选择 mt76-usb；构建前必须根据目标源码的 Kconfig 和实际无线芯片复核 profile，缺少驱动源码时构建会明确失败。可按同样格式添加设备和 USB 无线 profile（`rtl8xxxu` 等）。
+项目已同步参考项目的全部 158 个设备配置和 158 个 manifest（OOS14/OOS15/OOS16）。每个配置都包含 `kernel_dir`、`defconfig`、`wifi_drivers`、`expected_release_prefix` 等 LKM 构建字段。所有 158 个设备都额外启用 `usb-wifi` 候选集合，构建时按目标内核实际存在的 Kconfig 和源码自动筛选；不存在的候选会跳过，不会阻断该设备。Qualcomm 设备默认选择 ath11k/ath12k，联发科设备默认选择 mt76-usb；构建前必须根据目标源码的 Kconfig 和实际无线芯片复核 profile，缺少驱动源码时构建会明确失败。可按同样格式添加设备和 USB 无线 profile（`rtl8xxxu` 等）。

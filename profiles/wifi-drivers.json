@@ -16,7 +16,8 @@
       "ath11k"
     ],
     "dependencies": [],
-    "bool_kconfig": []
+    "bool_kconfig": [],
+    "optional": true
   },
   "ath12k": {
     "kconfig": [
@@ -34,7 +35,8 @@
     "bool_kconfig": [
       "CONFIG_ATH12K_PCI"
     ],
-    "dependencies": []
+    "dependencies": [],
+    "optional": true
   },
   "rtl8xxxu": {
     "kconfig": [
@@ -62,6 +64,72 @@
     "modules": [
       "mt76-usb.ko",
       "mt76x02-usb.ko"
+    ],
+    "firmware": [
+      "mediatek"
+    ],
+    "dependencies": [],
+    "bool_kconfig": [],
+    "optional": true
+  },
+  "usb-wifi": {
+    "optional": true,
+    "kconfig": [
+      "CONFIG_RTL8XXXU",
+      "CONFIG_RTL8192CU",
+      "CONFIG_ATH9K_HTC",
+      "CONFIG_CARL9170",
+      "CONFIG_RT2800USB",
+      "CONFIG_MT7601U",
+      "CONFIG_MT76x0U",
+      "CONFIG_MT76x2U",
+      "CONFIG_MT7921U",
+      "CONFIG_RTW88_USB",
+      "CONFIG_RTW89_8852AU",
+      "CONFIG_RTL8187",
+      "CONFIG_ZD1211RW",
+      "CONFIG_P54_USB",
+      "CONFIG_RT2500USB",
+      "CONFIG_RT73USB",
+      "CONFIG_ATH6KL_USB"
+    ],
+    "targets": [
+      "drivers/net/wireless/realtek/rtl8xxxu/rtl8xxxu.ko",
+      "drivers/net/wireless/realtek/rtl8192cu/rtl8192cu.ko",
+      "drivers/net/wireless/ath/ath9k/ath9k_htc.ko",
+      "drivers/net/wireless/ath/carl9170/carl9170.ko",
+      "drivers/net/wireless/ralink/rt2x00/rt2800usb.ko",
+      "drivers/net/wireless/mediatek/mt7601u/mt7601u.ko",
+      "drivers/net/wireless/mediatek/mt76/mt76x0/mt76x0u.ko",
+      "drivers/net/wireless/mediatek/mt76/mt76x2/mt76x2u.ko",
+      "drivers/net/wireless/mediatek/mt76/mt7921/mt7921u.ko",
+      "drivers/net/wireless/realtek/rtw88/rtw88_usb.ko",
+      "drivers/net/wireless/realtek/rtw89/rtw89_8852au.ko",
+      "drivers/net/wireless/realtek/rtl818x/rtl8187/rtl8187.ko",
+      "drivers/net/wireless/zydas/zd1211rw/zd1211rw.ko",
+      "drivers/net/wireless/intersil/p54/p54usb.ko",
+      "drivers/net/wireless/ralink/rt2x00/rt2500usb.ko",
+      "drivers/net/wireless/ralink/rt2x00/rt73usb.ko",
+      "drivers/net/wireless/ath/ath6kl/ath6kl_usb.ko"
+    ],
+    "modules": [
+      "rtl8xxxu.ko",
+      "rtl8192cu.ko",
+      "ath9k_htc.ko",
+      "carl9170.ko",
+      "rt2800usb.ko",
+      "mt7601u.ko",
+      "mt76x0u.ko",
+      "mt76x2u.ko",
+      "mt7921u.ko",
+      "rtw88_usb.ko",
+      "rtw89_8852au.ko",
+      "rtl8187.ko",
+      "zd1211rw.ko",
+      "p54usb.ko",
+      "rt2500usb.ko",
+      "rt73usb.ko",
+      "ath6kl_usb.ko"
     ],
     "firmware": [
       "mediatek"

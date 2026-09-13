@@ -31,7 +31,8 @@
   "defconfig": "gki_defconfig",
   "compiler": "kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin",
   "wifi_drivers": [
-    "ath12k"
+    "ath12k",
+    "usb-wifi"
   ],
   "expected_release_prefix": "6.6.",
   "firmware_policy": "warn"
