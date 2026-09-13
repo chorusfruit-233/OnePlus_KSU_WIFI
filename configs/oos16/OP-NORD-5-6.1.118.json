@@ -31,7 +31,6 @@
   "defconfig": "gki_defconfig",
   "compiler": "kernel_platform/prebuilts/clang/host/linux-x86/clang-r487747c/bin",
   "wifi_drivers": [
-    "mt76-usb",
     "usb-wifi"
   ],
   "expected_release_prefix": "6.1.",
