@@ -72,6 +72,8 @@ def package(config_path, kernel, install, output):
         if builtin_file.is_file():
             builtins.update(module_name(p) for p in builtin_file.read_text().splitlines())
     requested = []
+    resident = {name for profile_name in config['wifi_drivers']
+                for name in profiles[profile_name].get('resident_modules', [])}
     for profile_name in config['wifi_drivers']:
         profile = profiles[profile_name]
         for target in profile['targets']:
@@ -125,8 +127,15 @@ def package(config_path, kernel, install, output):
             for line in versions.splitlines():
                 crc, symbol = line.split()[:2]
                 expected = target_symbols.get(symbol) or build_symbols.get(symbol)
-                if expected is None or int(crc, 16) != expected[0]:
-                    fail(f'symbol CRC mismatch or unavailable export in {path.name}: {symbol}')
+                if expected is None:
+                    # Supplied by a module the running kernel already carries; ksud insmod
+                    # binds these by name from /proc/kallsyms at load time.
+                    if any(symbol.startswith(owner + '_') for owner in resident):
+                        print(f'warning: {path.name}: {symbol} comes from a resident module, not bundled')
+                        continue
+                    fail(f'unavailable export in {path.name}: {symbol}')
+                if int(crc, 16) != expected[0]:
+                    fail(f'symbol CRC mismatch in {path.name}: {symbol}')
         visiting.remove(path)
         visited.add(path)
         ordered.append(path)

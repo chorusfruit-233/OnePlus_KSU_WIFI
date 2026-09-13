@@ -172,7 +172,11 @@ def build(config_path, checkout, output):
     # modpost consume target Module.symvers, including on kernels >= 6.6.
     # Full `make modules` instead tries to regenerate the running kernel ABI.
     scopes = {str(Path(t).parent) for t in targets if (source / Path(t).parent).is_dir()}
-    added_modules = {k for k, v in current.items() if v == 'm' and baseline.get(k) != 'm'}
+    # Prerequisites exist only to satisfy Kconfig, not to be shipped. Dropping them here
+    # keeps their directories (net/wireless, net/mac80211) out of the scopes, so a
+    # cfg80211/mac80211 the device already loads is never shadowed by a bundled copy.
+    added_modules = {k for k, v in current.items()
+                     if v == 'm' and baseline.get(k) != 'm'} - prerequisite_modules
     makefiles = list(source.rglob('Makefile')) + list(source.rglob('Kbuild'))
     for makefile in makefiles:
         relative = makefile.parent.relative_to(source)

@@ -61,7 +61,22 @@
     "firmware": [
       "mediatek"
     ],
-    "dependencies": [],
-    "bool_kconfig": []
+    "dependencies": [
+      "CONFIG_CFG80211",
+      "CONFIG_MAC80211"
+    ],
+    "resident_modules": [
+      "cfg80211",
+      "mac80211"
+    ],
+    "bool_kconfig": [
+      "CONFIG_WLAN",
+      "CONFIG_WLAN_VENDOR_REALTEK",
+      "CONFIG_WLAN_VENDOR_ATH",
+      "CONFIG_WLAN_VENDOR_MEDIATEK",
+      "CONFIG_WLAN_VENDOR_RALINK",
+      "CONFIG_WLAN_VENDOR_INTERSIL",
+      "CONFIG_WLAN_VENDOR_ZYDAS"
+    ]
   }
 }
