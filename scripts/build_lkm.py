@@ -113,6 +113,10 @@ def build(config_path, checkout, output):
     if not jobs.isdigit() or int(jobs) < 1:
         raise ValueError('JOBS must be a positive integer')
     make = ['make', '-C', str(source), f'O={obj}', 'ARCH=arm64', 'LLVM=1', 'LLVM_IAS=1', f'-j{jobs}']
+    if os.environ.get('CCACHE_DIR'):
+        os.environ['CCACHE_DIR'] = str(Path(os.environ['CCACHE_DIR']).expanduser().resolve())
+        os.environ.setdefault('CCACHE_BASEDIR', str(ROOT))
+        make.extend(['CC=ccache clang', 'HOSTCC=ccache clang', 'HOSTCXX=ccache clang++'])
     # Allow standard cross compiler variables without inventing target ABI values.
     for name in ('CROSS_COMPILE', 'CROSS_COMPILE_COMPAT'):
         if os.environ.get(name):

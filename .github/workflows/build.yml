@@ -51,7 +51,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y bc bison build-essential cpio flex libelf-dev libssl-dev libdw-dev python3 rsync zip jq kmod
+        run: sudo apt-get update && sudo apt-get install -y bc bison build-essential cpio flex libelf-dev libssl-dev libdw-dev python3 rsync zip jq kmod ccache
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-${{ matrix.config }}-${{ hashFiles(matrix.config, 'profiles/wifi-drivers.json') }}
+          restore-keys: |
+            ccache-${{ matrix.config }}-
+            ccache-
+      - name: Configure ccache
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/.ccache"
+          ccache --set-config=cache_dir="$GITHUB_WORKSPACE/.ccache"
+          ccache --set-config=max_size=8G
+          ccache --set-config=compression=true
+          ccache -z
+          echo "CCACHE_DIR=$GITHUB_WORKSPACE/.ccache" >> "$GITHUB_ENV"
+          echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          echo "CCACHE_COMPILERCHECK=content" >> "$GITHUB_ENV"
+          echo "CCACHE_SLOPPINESS=clang_index_store" >> "$GITHUB_ENV"
+          echo "CC=ccache clang" >> "$GITHUB_ENV"
+          echo "CXX=ccache clang++" >> "$GITHUB_ENV"
+          echo "HOSTCC=ccache clang" >> "$GITHUB_ENV"
+          echo "HOSTCXX=ccache clang++" >> "$GITHUB_ENV"
+          ccache --version
       - name: Resolve device metadata
         id: meta
         env:
@@ -61,6 +85,8 @@ jobs:
           echo "manifest=$(jq -r .manifest "$CONFIG")" >> "$GITHUB_OUTPUT"
           echo "kernel_dir=$(jq -r .kernel_dir "$CONFIG")" >> "$GITHUB_OUTPUT"
       - name: Sync kernel and toolchain from manifest
+        env:
+          TOOLCHAIN_CACHE_URL: https://github.com/${{ github.repository }}/releases/download/toolchain-cache
         run: python3 scripts/sync_manifest.py "manifests/${{ steps.meta.outputs.os }}/${{ steps.meta.outputs.manifest }}" kernel-source
       - name: Prepare target ABI
         if: inputs.prepare_abi
@@ -72,6 +98,11 @@ jobs:
           KERNEL_BUILD_DIR: ${{ github.workspace }}/kernel-source/${{ steps.meta.outputs.kernel_dir }}/out
           JOBS: 2
         run: scripts/build_lkm.sh "${{ matrix.config }}" "$KERNEL_TREE" dist
+      - name: ccache statistics
+        if: always()
+        run: |
+          ccache -s || true
+          ccache --show-log-stats || true
       - uses: actions/upload-artifact@v4
         with:
           name: wifi-lkm-${{ matrix.config }}

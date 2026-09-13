@@ -13,6 +13,10 @@
 - `profiles/wifi-drivers.json`：无线驱动 Kconfig、产物和固件族。
 - `scripts/build_lkm.sh`：基于现有内核树构建并打包单设备模块。
 - `module-template/service.sh`：启动时校验 `uname -r` 后调用 `ksud insmod`。
+- `.github/workflows/mirror-toolchains.yml`：从全部 manifest 收集唯一工具链 revision，写入 `toolchain-cache` Release。
+- `scripts/mirror_toolchains.py`：生成工具链镜像矩阵。
+
+CI 的 `build.yml` 使用 `actions/cache` 保存每设备 ccache（默认 8 GiB），缓存键包含设备配置和无线 profile；工具链同步优先读取 `TOOLCHAIN_CACHE_URL`，因此可由 `mirror-toolchains.yml` 预热。`ccache` 缓存会在 job 结束时由 Actions 自动保存。
 
 ## 使用
 

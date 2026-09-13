@@ -1,0 +1,37 @@
+name: Mirror manifest toolchains
+on:
+  workflow_dispatch:
+  push:
+    paths: [configs/**, manifests/**]
+permissions:
+  contents: write
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: generate
+        run: echo "matrix=$(python3 scripts/mirror_toolchains.py)" >> "$GITHUB_OUTPUT"
+  mirror:
+    needs: matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.matrix.outputs.matrix) }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Ensure cache release
+        run: |
+          gh release view toolchain-cache --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create toolchain-cache --repo "$GITHUB_REPOSITORY" --title 'Toolchain cache' --notes 'Mirrored manifest toolchains'
+      - name: Mirror archive
+        run: |
+          set -euo pipefail
+          f='${{ matrix.filename }}'; repo="$GITHUB_REPOSITORY"; base="https://github.com/$repo/releases/download/toolchain-cache/$f"
+          if curl -fsIL "$base" >/dev/null 2>&1; then echo "cache hit: $f"; exit 0; fi
+          curl --fail --location --retry 5 --retry-all-errors -o "$f" '${{ matrix.url }}'
+          test -s "$f"
+          gh release upload toolchain-cache "$f" --repo "$repo" --clobber
